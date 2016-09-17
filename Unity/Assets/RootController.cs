@@ -78,7 +78,11 @@ public class RootController : MonoBehaviour {
                 Morph();
             } 
             else
+            {
+                SaveTextureToDisk(PAverage);
                 state = States.ready;
+            }
+                
 
         }
 
@@ -121,6 +125,8 @@ public class RootController : MonoBehaviour {
         SetTexture(PAverage);
 
         mat.SetFloat("_Mixer", 0);
+
+        SaveTextureToDisk(PAverage);
 
         state = States.ready;
     }
@@ -188,14 +194,14 @@ public class RootController : MonoBehaviour {
 
     void SetTexture(Texture2D tex)
     {
-        
         mat.SetTexture("_Tex0", tex);
     }
 
     void SaveTextureToDisk(Texture2D tex)
     {
         byte[] bytes = tex.EncodeToPNG();
-        File.WriteAllBytes(Application.dataPath + "/../photo-" + counter + "-" + System.DateTime.Now.Millisecond + ".png", bytes);
+        //Debug.Log(Application.dataPath + "/../Photos/photo-" + counter + "-" + personsName + ".png");
+        File.WriteAllBytes( "C:\\Users\\Daniel\\Work\\Erasure\\Photos\\photo_" + counter + "_" + personsName + ".png", bytes);
     }
 
 
@@ -205,4 +211,13 @@ public class RootController : MonoBehaviour {
     {
         return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
     }
+
+
+    string personsName = "Enter name";
+    
+    void OnGUI()
+    {
+        personsName = GUI.TextField(new Rect(10, 10, 400, 50), personsName, 25);
+    }
+    
 }
