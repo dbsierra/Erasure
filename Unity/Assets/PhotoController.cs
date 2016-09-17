@@ -30,6 +30,7 @@ public class SmearStream : Object
 
     public IEnumerator SmearStreamAnim()
     {
+        
         int r = (int)Random.Range(10, 50);
         float r2 = Random.Range(.1f, .8f);
         float r3 = Random.Range(.8f, 1.5f);
@@ -44,7 +45,9 @@ public class SmearStream : Object
                
         }
 
-        float length = 5f;
+        float length = .1f;
+
+        
         while ( Time.time - startTime < length)
         {
             
@@ -52,35 +55,37 @@ public class SmearStream : Object
             count = 1;
             for( int h=(int)startPixel.y; h < (int)endPixel.y; h++ )
             {
+
+                int x = (int)startPixel.x + (int)Random.Range(0, 1);
+                
                 float lerp = (1 - ((float)(count) / (float)streamLength));
 
                 Color orgC = pixelSnapshot[ h ];
-                
+
+
+                Color cam = Color.white;
+
+                if(PhotoController.Instance.Wct.isPlaying )
+                cam = PhotoController.Instance.Wct.GetPixel(x, h);
+
                 //Color newC = tex.GetPixel( (int)startPixel.x, (int)Mathf.Max(0, h-r) );
-                Color newC = pixelSnapshot[ (int)Mathf.Max(0, h - r) ] * new Color(r3, r3, Random.Range(.8f, 1.5f));
+                Color newC = pixelSnapshot[ (int)Mathf.Max(0, h - r) ] * new Color(r3, r3, Random.Range(.8f, 1.5f)) * cam;
 
                 Color fC = Color.Lerp(orgC, newC, ((Time.time - startTime)/ length) * lerp * r2 );
 
-               tex.SetPixel( (int)startPixel.x + (int)Random.Range(0,1), h, fC );
+               tex.SetPixel( x, h, fC );
 
                 count++;
+                
             }
 
-            /*
-            for (int y = 0; y < tex.height; y++)
-            {
-                for (int x = 0; x < tex.width; x++)
-                {
-                    Color orgC = PhotoController.Instance.pixels2D[x, y];
-                    Color fC = Color.Lerp(orgC, Color.red, Time.time - startTime);
-
-                    PhotoController.Instance.Texture.SetPixel(x, y, fC);
-                }
-            }*/
-
-            tex.Apply();
             yield return null;
+            tex.Apply();
+            
         }
+        
+
+        
         Done();
     }
 
@@ -118,19 +123,36 @@ public class PhotoController : MonoBehaviour {
     private Vector2 endPixel;
     private Vector2 direction;
 
+    WebCamTexture wct;
+    public WebCamTexture Wct { get { return wct; } }
+
 	// Use this for initialization
 	void Start () {
+
+
+        foreach( WebCamDevice s in WebCamTexture.devices)
+        {
+            Debug.Log(s.name);
+        }
+        wct = new WebCamTexture(WebCamTexture.devices[1].name);
+        wct.Play();
+
+        this.meshRenderer.transform.localScale = new Vector3(1f * (float)wct.width/(float)wct.height, 1, 1);
+
         Instance = this;
 
         mat = meshRenderer.material;
 
-        texture = new Texture2D(tex.height, tex.width);
+        texture = new Texture2D(wct.width, wct.height);
 
         pixels = tex.GetPixels();
-        texture.SetPixels(pixels);
+        //texture.SetPixels(pixels);
+
+        texture.SetPixels(wct.GetPixels());
 
         pixels2D = new Color[tex.height, tex.width];
 		
+        /*
 		int c = 0;
         //pixels are stored in the 1D array by going down height repeadetly over the width, rather than scanning the width, height number of times
 		for( int i=0; i<tex.width; i++ )
@@ -150,6 +172,7 @@ public class PhotoController : MonoBehaviour {
             }
         }
 
+        */
         texture.Apply();
 
         
@@ -172,42 +195,28 @@ public class PhotoController : MonoBehaviour {
         startTime = time;
     }
 
-    /*
-    IEnumerator SmearStreamAnim()
-    {
-        while( time-startTime < 1 )
-        {
-            for (int y = 0; y < texture.height; y++)
-            {
-                for (int x = 0; x < texture.width; x++)
-                {
-                    Color orgC = pixels2D[x, y];
-                    Color fC = Color.Lerp(orgC, Color.red, time - startTime);  
-                    texture.SetPixel( x, y, fC);
-                }
-            }
-            texture.Apply();
-            yield return null;
-        }
-    }
-	*/
-
 	// Update is called once per frame
 	void Update () {
 
+
+        if( time < 3 )
+        {
+            texture.SetPixels(wct.GetPixels());
+            texture.Apply();
+
+        }
+
         time += Time.deltaTime;
 
-        if( time - timeSnap >= .01f )
+        if( time >=3 && (time - timeSnap >= .01f ) )
         {
             timeSnap = time;
-
 
             float seedX = Mathf.Pow( Random.Range(0f, 1f), 1f);
             float seedY = Mathf.Pow( Random.Range(0f, 1f), 1f);
 
             float seedHeight = Mathf.Pow(Random.Range(0f, 1f), 10f);
-
-
+        
             Vector2 rStart = new Vector2( (int)(seedX * texture.width), (int)(seedY * texture.height));
 
             Vector2 rEnd = new Vector2(rStart.x, (int)Mathf.Clamp( rStart.y + seedHeight*texture.height + 20, 0, texture.height) );
