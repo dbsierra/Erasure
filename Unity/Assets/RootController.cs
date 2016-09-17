@@ -30,29 +30,58 @@ public class RootController : MonoBehaviour {
 
     public GameObject Guides;
 
+    public AudioSource CameraSound;
+    public AudioSource AverageSound;
+    AudioClip AAverage;
+    AudioClip ACurrent;
+    AudioClip ASum;
+    Microphone mic;
+
 	// Use this for initialization
 	void Start ()
     {
         PWebCam = new WebCamTexture(WebCamTexture.devices[1].name);
         PWebCam.Play();
        
-        //Init textures
+        //Init
         PCurrent = new Texture2D(PWebCam.width, PWebCam.height, TextureFormat.RGB24, false);
         PAverage = new Texture2D(PWebCam.width, PWebCam.height, TextureFormat.RGB24, false);
         PSigmaColors = new Vector4[PWebCam.GetPixels().Length];
         counter = 1;
         state = States.ready;
         mat = Quad.material;
-                
+        //mic = new Microphone();
+
+        
+        //Microphone.Start( Microphone.devices[0], true,  );
+
         EnterCameraState();
         state = States.camera;
     }
-	
+
+    bool switchMix;
+
+    void SwitchMix()
+    {
+        switchMix = !switchMix;
+        if(switchMix)
+        {
+            mat.SetFloat("_Mixer", .5f);
+        }
+        else
+            mat.SetFloat("_Mixer", 0f);
+    }
 	// Update is called once per frame
 	void Update () {
-            
+         
+        if( Input.GetKeyUp(KeyCode.N))
+        {
+            SwitchMix();
+        }
         if( Input.GetKeyUp(KeyCode.G) )
         {
+            CameraSound.Play();
+
             Guides.SetActive(false);
 
             TakeSnapshot();
@@ -217,6 +246,7 @@ public class RootController : MonoBehaviour {
     
     void OnGUI()
     {
+        if( state == States.camera)
         personsName = GUI.TextField(new Rect(10, 10, 400, 50), personsName, 25);
     }
     
